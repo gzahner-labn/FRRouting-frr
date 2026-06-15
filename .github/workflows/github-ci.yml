@@ -357,6 +357,13 @@ jobs:
           # Keep test artifacts longer to aid flaky test/debug investigations.
           retention-days: 14
           if-no-files-found: warn
+      - name: Upload coverage report
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: coverage-info-${{ matrix.cfg.platform }}
+          path: test-results-${{ matrix.cfg.platform }}/coverage/coverage.info
+          if-no-files-found: warn
       - name: Cleanup
         if: ${{ always() }}
         run: |
