@@ -345,6 +345,11 @@ jobs:
           docker cp \
             frr-${{ matrix.cfg.platform }}-cont:/tmp/topotests/coverage.info \
             test-results-${{ matrix.cfg.platform }}/coverage/coverage.info || true
+      - name: Install lcov
+        if: ${{ always() }}
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y lcov
       - name: Generate coverage HTML report
         if: ${{ always() }}
         run: |
