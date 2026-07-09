@@ -359,6 +359,7 @@ jobs:
               > test-results-${{ matrix.cfg.platform }}/coverage/coverage.rebased.info
 
             genhtml \
+              --ignore-errors source \
               test-results-${{ matrix.cfg.platform }}/coverage/coverage.rebased.info \
               --output-directory test-results-${{ matrix.cfg.platform }}/coverage/html
           else
