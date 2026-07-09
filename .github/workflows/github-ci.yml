@@ -354,9 +354,12 @@ jobs:
         if: ${{ always() }}
         run: |
           if [ -f test-results-${{ matrix.cfg.platform }}/coverage/coverage.info ]; then
-            genhtml \
-              --substitute 's#^/home/frr/frr#${{ github.workspace }}#' \
+            sed "s#^SF:/home/frr/frr#SF:${GITHUB_WORKSPACE}#" \
               test-results-${{ matrix.cfg.platform }}/coverage/coverage.info \
+              > test-results-${{ matrix.cfg.platform }}/coverage/coverage.rebased.info
+
+            genhtml \
+              test-results-${{ matrix.cfg.platform }}/coverage/coverage.rebased.info \
               --output-directory test-results-${{ matrix.cfg.platform }}/coverage/html
           else
             echo "No coverage.info found; skipping HTML coverage report"
