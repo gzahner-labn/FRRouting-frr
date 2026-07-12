@@ -334,14 +334,18 @@ jobs:
       - name: Generate coverage HTML report
         if: ${{ always() }}
         run: |
+          docker start frr-${{ matrix.cfg.platform }}-cont
+
           docker exec frr-${{ matrix.cfg.platform }}-cont \
-            bash -c 'if [ -f /tmp/topotests/coverage.info ]; then
+            bash -c '
+              set -e
+              test -f /tmp/topotests/coverage.info
               mkdir -p /tmp/topotests/coverage-html
               genhtml /tmp/topotests/coverage.info \
                 --output-directory /tmp/topotests/coverage-html
-            else
-              echo "No coverage.info found; skipping HTML coverage report"
-            fi' || true
+            '
+
+          docker stop frr-${{ matrix.cfg.platform }}-cont
       - name: Gather results
         if: ${{ always() }}
         run: |
