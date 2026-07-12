@@ -336,13 +336,14 @@ jobs:
         run: |
           docker start frr-${{ matrix.cfg.platform }}-cont
 
-          docker exec frr-${{ matrix.cfg.platform }}-cont \
+          docker exec --user root frr-${{ matrix.cfg.platform }}-cont \
             bash -c '
               set -e
               test -f /tmp/topotests/coverage.info
               mkdir -p /tmp/topotests/coverage-html
               genhtml /tmp/topotests/coverage.info \
                 --output-directory /tmp/topotests/coverage-html
+              test -f /tmp/topotests/coverage-html/index.html
             '
 
           docker stop frr-${{ matrix.cfg.platform }}-cont
