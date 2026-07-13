@@ -365,6 +365,7 @@ jobs:
                   /coverage/coverage.info \
                   --output-directory /coverage/html
                 test -f /coverage/html/index.html
+                chown -R '"$(id -u):$(id -g)"' /coverage
               '
 
             ls -lh "$coverage_dir/html/index.html"
