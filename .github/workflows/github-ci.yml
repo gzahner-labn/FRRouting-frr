@@ -331,34 +331,6 @@ jobs:
           fi
           echo "Some rerun tests still failed."
           exit 1
-      - name: Generate coverage HTML report
-        if: ${{ always() }}
-        run: |
-          if [ -f coverage-${{ matrix.cfg.platform }}/coverage.info ]; then
-            docker start frr-${{ matrix.cfg.platform }}-cont
-
-            docker exec --user root frr-${{ matrix.cfg.platform }}-cont \
-              bash -c '
-                set -e
-                test -f /tmp/topotests/coverage.info
-                rm -rf /tmp/topotests/coverage-html
-                mkdir -p /tmp/topotests/coverage-html
-                genhtml \
-                  /tmp/topotests/coverage.info \
-                  --output-directory /tmp/topotests/coverage-html
-                test -f /tmp/topotests/coverage-html/index.html
-              '
-
-            docker stop frr-${{ matrix.cfg.platform }}-cont
-
-            mkdir -p coverage-${{ matrix.cfg.platform }}/html
-
-            docker cp \
-              frr-${{ matrix.cfg.platform }}-cont:/tmp/topotests/coverage-html/. \
-              coverage-${{ matrix.cfg.platform }}/html/
-          else
-            echo "No coverage.info found; skipping HTML coverage report"
-          fi
       - name: Gather results
         if: ${{ always() }}
         run: |
@@ -375,6 +347,30 @@ jobs:
           docker cp \
             frr-${{ matrix.cfg.platform }}-cont:/tmp/topotests/coverage.info \
             coverage-${{ matrix.cfg.platform }}/coverage.info || true
+      - name: Generate coverage HTML report
+        if: ${{ always() }}
+        run: |
+          coverage_dir="$PWD/coverage-${{ matrix.cfg.platform }}"
+
+          if [ -f "$coverage_dir/coverage.info" ]; then
+            mkdir -p "$coverage_dir/html"
+
+            docker run --rm \
+              --user root \
+              -v "$coverage_dir:/coverage" \
+              frr-${{ matrix.cfg.platform }} \
+              bash -c '
+                set -e
+                genhtml \
+                  /coverage/coverage.info \
+                  --output-directory /coverage/html
+                test -f /coverage/html/index.html
+              '
+
+            ls -lh "$coverage_dir/html/index.html"
+          else
+            echo "No coverage.info found; skipping HTML coverage report"
+          fi
       - name: Install lcov
         if: ${{ always() }}
         run: |
