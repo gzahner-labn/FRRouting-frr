@@ -334,37 +334,47 @@ jobs:
       - name: Generate coverage HTML report
         if: ${{ always() }}
         run: |
-          docker start frr-${{ matrix.cfg.platform }}-cont
+          if [ -f coverage-${{ matrix.cfg.platform }}/coverage.info ]; then
+            docker start frr-${{ matrix.cfg.platform }}-cont
 
-          docker exec --user root frr-${{ matrix.cfg.platform }}-cont \
-            bash -c '
-              set -e
-              test -f /tmp/topotests/coverage.info
-              mkdir -p /tmp/topotests/coverage-html
-              genhtml /tmp/topotests/coverage.info \
-                --output-directory /tmp/topotests/coverage-html
-              test -f /tmp/topotests/coverage-html/index.html
-            '
+            docker exec --user root frr-${{ matrix.cfg.platform }}-cont \
+              bash -c '
+                set -e
+                test -f /tmp/topotests/coverage.info
+                rm -rf /tmp/topotests/coverage-html
+                mkdir -p /tmp/topotests/coverage-html
+                genhtml \
+                  /tmp/topotests/coverage.info \
+                  --output-directory /tmp/topotests/coverage-html
+                test -f /tmp/topotests/coverage-html/index.html
+              '
 
-          docker stop frr-${{ matrix.cfg.platform }}-cont
+            docker stop frr-${{ matrix.cfg.platform }}-cont
+
+            mkdir -p coverage-${{ matrix.cfg.platform }}/html
+
+            docker cp \
+              frr-${{ matrix.cfg.platform }}-cont:/tmp/topotests/coverage-html/. \
+              coverage-${{ matrix.cfg.platform }}/html/
+          else
+            echo "No coverage.info found; skipping HTML coverage report"
+          fi
       - name: Gather results
         if: ${{ always() }}
         run: |
           if [ ! -d test-results-${{ matrix.cfg.platform }} ]; then
-            if ! ./tests/topotests/analyze.py -Ar test-results-${{ matrix.cfg.platform }} -C frr-${{ matrix.cfg.platform }}-cont; then
+            if ! ./tests/topotests/analyze.py \
+              -Ar test-results-${{ matrix.cfg.platform }} \
+              -C frr-${{ matrix.cfg.platform }}-cont; then
               echo "ERROR: gathering results produced an error, perhaps due earlier run cancellation." >&2
             fi
           fi
 
-          mkdir -p test-results-${{ matrix.cfg.platform }}/coverage
+          mkdir -p coverage-${{ matrix.cfg.platform }}
 
           docker cp \
             frr-${{ matrix.cfg.platform }}-cont:/tmp/topotests/coverage.info \
-            test-results-${{ matrix.cfg.platform }}/coverage/coverage.info || true
-
-          docker cp \
-            frr-${{ matrix.cfg.platform }}-cont:/tmp/topotests/coverage-html \
-            test-results-${{ matrix.cfg.platform }}/coverage/html || true
+            coverage-${{ matrix.cfg.platform }}/coverage.info || true
       - name: Install lcov
         if: ${{ always() }}
         run: |
@@ -386,14 +396,16 @@ jobs:
         if: ${{ always() }}
         uses: actions/upload-artifact@v7
         with:
-          name: coverage-info-${{ matrix.cfg.platform }}
-          path: |
-            test-results-${{ matrix.cfg.platform }}/coverage/coverage.info
-            test-results-${{ matrix.cfg.platform }}/coverage/html
+          name: coverage-${{ matrix.cfg.platform }}
+          path: coverage-${{ matrix.cfg.platform }}
           if-no-files-found: warn
       - name: Cleanup
         if: ${{ always() }}
         run: |
-          rm -rf test-results-${{ matrix.cfg.platform }}* /tmp/frr-${{ matrix.cfg.platform }}.tar
+          rm -rf \
+            test-results-${{ matrix.cfg.platform }}* \
+            coverage-${{ matrix.cfg.platform }} \
+            /tmp/frr-${{ matrix.cfg.platform }}.tar
+
           docker stop frr-${{ matrix.cfg.platform }}-cont || true
           docker rm frr-${{ matrix.cfg.platform }}-cont || true
