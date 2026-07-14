@@ -335,9 +335,7 @@ jobs:
         if: ${{ always() }}
         run: |
           if [ ! -d test-results-${{ matrix.cfg.platform }} ]; then
-            if ! ./tests/topotests/analyze.py \
-              -Ar test-results-${{ matrix.cfg.platform }} \
-              -C frr-${{ matrix.cfg.platform }}-cont; then
+            if ! ./tests/topotests/analyze.py -Ar test-results-${{ matrix.cfg.platform }} -C frr-${{ matrix.cfg.platform }}-cont; then
               echo "ERROR: gathering results produced an error, perhaps due earlier run cancellation." >&2
             fi
           fi
