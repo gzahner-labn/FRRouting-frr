@@ -362,7 +362,9 @@ jobs:
         run: |
           coverage_dir="$PWD/coverage-${{ matrix.cfg.platform }}"
 
-          if [ -f "$coverage_dir/coverage.info" ]; then
+          if [ -f "$coverage_dir/coverage.info" ] || \
+             [ -f "$coverage_dir/coverage-initial.info" ] || \
+             [ -f "$coverage_dir/coverage-rerun.info" ]; then
             mkdir -p "$coverage_dir/html"
 
             docker run --rm \
@@ -371,16 +373,32 @@ jobs:
               frr-${{ matrix.cfg.platform }} \
               bash -c '
                 set -e
+
+                if [ -f /coverage/coverage-initial.info ] &&
+                   [ -f /coverage/coverage-rerun.info ]; then
+                  lcov \
+                    --add-tracefile /coverage/coverage-initial.info \
+                    --add-tracefile /coverage/coverage-rerun.info \
+                    --output-file /coverage/coverage.info
+                elif [ -f /coverage/coverage-initial.info ] &&
+                     [ ! -f /coverage/coverage.info ]; then
+                  cp /coverage/coverage-initial.info /coverage/coverage.info
+                elif [ -f /coverage/coverage-rerun.info ] &&
+                     [ ! -f /coverage/coverage.info ]; then
+                  cp /coverage/coverage-rerun.info /coverage/coverage.info
+                fi
+
                 genhtml \
                   /coverage/coverage.info \
                   --output-directory /coverage/html
+
                 test -f /coverage/html/index.html
                 chown -R '"$(id -u):$(id -g)"' /coverage
               '
 
             ls -lh "$coverage_dir/html/index.html"
           else
-            echo "No coverage.info found; skipping HTML coverage report"
+            echo "No coverage information found; skipping HTML coverage report"
           fi
       - name: Upload test results
         if: ${{ always() }}
