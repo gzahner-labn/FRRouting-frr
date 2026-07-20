@@ -319,6 +319,13 @@ jobs:
 
           echo "ERROR: Some tests failed during parallel run, rerunning serially." >&2
           echo RERUN_TESTS: $rerun_tests >&2
+
+          mkdir -p coverage-${{ matrix.cfg.platform }}
+
+          docker cp \
+            frr-${{ matrix.cfg.platform }}-cont:/tmp/topotests/coverage.info \
+            coverage-${{ matrix.cfg.platform }}/coverage-initial.info || true
+
           docker stop frr-${{ matrix.cfg.platform }}-cont
           docker rm frr-${{ matrix.cfg.platform }}-cont
 
@@ -341,9 +348,15 @@ jobs:
 
           mkdir -p coverage-${{ matrix.cfg.platform }}
 
+          if [ -f coverage-${{ matrix.cfg.platform }}/coverage-initial.info ]; then
+            coverage_file=coverage-rerun.info
+          else
+            coverage_file=coverage.info
+          fi
+
           docker cp \
             frr-${{ matrix.cfg.platform }}-cont:/tmp/topotests/coverage.info \
-            coverage-${{ matrix.cfg.platform }}/coverage.info || true
+            coverage-${{ matrix.cfg.platform }}/"$coverage_file" || true
       - name: Generate coverage HTML report
         if: ${{ always() }}
         run: |
