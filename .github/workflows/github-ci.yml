@@ -418,6 +418,7 @@ jobs:
         with:
           name: coverage-${{ matrix.cfg.platform }}
           path: coverage-${{ matrix.cfg.platform }}
+          retention-days: 14
           if-no-files-found: warn
       - name: Cleanup
         if: ${{ always() }}
